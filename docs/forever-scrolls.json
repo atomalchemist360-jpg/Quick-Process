@@ -1,0 +1,91 @@
+{
+  "source": "https://www.wowhead.com/forever/skill=3012/comprehension",
+  "skillID": 3012,
+  "scrolls": [
+    {
+      "itemID": 211780,
+      "name": "Scroll: KWYJIBO",
+      "requiredSkill": 1
+    },
+    {
+      "itemID": 211784,
+      "name": "Scroll: WUBBA WUBBA",
+      "requiredSkill": 15
+    },
+    {
+      "itemID": 211785,
+      "name": "Scroll: CWAL",
+      "requiredSkill": 1
+    },
+    {
+      "itemID": 211786,
+      "name": "Scroll: CHAP BALK WELLES",
+      "requiredSkill": 1
+    },
+    {
+      "itemID": 211787,
+      "name": "Scroll: LOWER PING WHOMEVER",
+      "requiredSkill": 1
+    },
+    {
+      "itemID": 211853,
+      "name": "Scroll: VOCE WELL",
+      "requiredSkill": 15
+    },
+    {
+      "itemID": 211854,
+      "name": "Scroll: OMIT KESA",
+      "requiredSkill": 15
+    },
+    {
+      "itemID": 211855,
+      "name": "Scroll: STHENIC LUNATE",
+      "requiredSkill": 15
+    },
+    {
+      "itemID": 213543,
+      "name": "Scroll: UPDOG",
+      "requiredSkill": 50
+    },
+    {
+      "itemID": 213544,
+      "name": "Scroll: TOPAZ YORAK",
+      "requiredSkill": 50
+    },
+    {
+      "itemID": 213545,
+      "name": "Scroll: PEATCHY ATTAX",
+      "requiredSkill": 50
+    },
+    {
+      "itemID": 213546,
+      "name": "Scroll: SHOOBEEDOOP",
+      "requiredSkill": 50
+    },
+    {
+      "itemID": 213547,
+      "name": "Scroll: THAW WORDS",
+      "requiredSkill": 50
+    },
+    {
+      "itemID": 281015,
+      "name": "Scroll: DOST OREM",
+      "requiredSkill": 175
+    },
+    {
+      "itemID": 281016,
+      "name": "Scroll: FORGOT HOOF THUD",
+      "requiredSkill": 175
+    },
+    {
+      "itemID": 281017,
+      "name": "Scroll: KEEP CLEF FOCI",
+      "requiredSkill": 175
+    },
+    {
+      "itemID": 281018,
+      "name": "Scroll: RARE SERVICHI RADAR",
+      "requiredSkill": 175
+    }
+  ]
+}

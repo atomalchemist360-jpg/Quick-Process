@@ -15,10 +15,12 @@ Hold Alt and right-click an eligible item in the default Blizzard bags outside c
 
 Automatic selection:
 - Disenchant: uncommon, rare, or epic weapons and armor, if Disenchant is learned. The game determines final eligibility and skill requirements; some equipment cannot be disenchanted.
-- Comprehend Scroll: 17 documented untranslated scroll item IDs (works with localized names), with English names and a “Requires Comprehension” tooltip fallback for additional scrolls. Uses the learned Comprehend Scroll ability by spell ID 1296017.
+- Comprehend Scroll: exactly the 17 item IDs in [Wowhead Forever’s Comprehension list](https://www.wowhead.com/forever/skill=3012/comprehension). Names and tooltip text are never used to recognize comprehension scrolls. Uses the learned Comprehend Scroll ability by spell ID 1296017.
 - Pick Lock: items whose tooltip contains a standalone Locked line (using the client translation) or “Requires Lockpicking”, if Pick Lock is learned. Already unlocked boxes retain normal behavior. The game checks your lockpicking skill and any tool requirements.
 
 Other items retain normal bag behavior. Left-click passes through the overlay where the client supports SetPassThroughButtons. Item processing is disabled during combat. Bank slots, equipped items, and third-party bag addons are not supported in this beta.
+
+Version 0.4.2 verifies the complete whitelist against the supplied Wowhead Forever Comprehension page and removes name/tooltip-based scroll detection.
 
 ## Troubleshooting scrolls
 
@@ -45,7 +47,7 @@ Type /qp for help. To map an item to a learned Pick Lock, Comprehend Scroll, or 
     /qp bind ITEM_ID SPELL_NAME_OR_ID
     /qp unbind ITEM_ID
 
-Use a numeric spell ID where possible, especially on non-English clients. A custom mapping overrides automatic selection for that item. Only these three abilities are accepted. Old assignments to other abilities are ignored. Mapping validity, target eligibility, required quantities, and skill requirements are ultimately enforced by the game.
+Use a numeric spell ID where possible, especially on non-English clients. A custom mapping overrides automatic selection for that item. Only these three abilities are accepted. Comprehend Scroll assignments also require an item ID in the verified Forever list; assignments to unlisted scroll IDs are rejected or ignored. Old assignments to other abilities are ignored. Mapping validity, target eligibility, required quantities, and skill requirements are ultimately enforced by the game.
 
 ## Verification and limitations
 
@@ -53,4 +55,4 @@ Mocked API checks passed for disenchant selection, comprehension selection, pick
 
 Ranged-attack mock checks also passed for weapon selection, Hunter Auto Shot preference, custom attack discovery, enemy-hover binding, mouseover target/cast guards, auto-fire macro syntax, combat-safe routing, queued equipment updates, unequipping, and bag-binding cleanup. These mocks do not reproduce the game engine.
 
-The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Additional untranslated scrolls outside the documented ID list may require a manual assignment on non-English clients.
+The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Unlisted scroll IDs are not comprehended, even if their name or tooltip matches. Update the verified list if the Forever database adds more eligible scrolls. The repository documents each ID and source in docs/forever-scrolls.md.

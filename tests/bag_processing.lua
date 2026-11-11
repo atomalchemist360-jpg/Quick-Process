@@ -49,10 +49,24 @@ assert(overlay.binding[2]=='ALT-BUTTON2' and overlay.binding[4]=='RightButton')
 assert(load('local self=...; '..overlay.attributes._onleave))(overlay); assert(not overlay.binding)
 assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
 assert(load('local self=...; '..overlay.attributes._onhide))(overlay); assert(not overlay.binding)
-kind=7; itemName='Scroll: CWAL'; item.quality=1
+kind=7; itemName='Scroll: CWAL'; item.quality=1; item.hyperlink='item:211785'
 addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1296017)
 assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+-- All IDs come from the requested Forever skill page, not name-based lookup.
+for _, id in ipairs({211780,211784,211785,211786,211787,211853,211854,211855,213543,213544,213545,213546,213547,281015,281016,281017,281018}) do
+ item.hyperlink='item:'..id; itemName='Localized scroll label'; tip=''
+ addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+ assert(overlay.attributes.spell2==1296017 and overlay.attributes.type2=='spell')
+end
+-- A duplicate name and matching tooltip cannot qualify an unlisted ID.
+item.hyperlink='item:999999'; itemName='Scroll: CHAP BALK WELLES'; tip='Requires Comprehension (1)'
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+QuickProcessDB.items[999999]=1296017
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+QuickProcessDB.items[999999]=nil
+SlashCmdList.QUICKPROCESS('bind 999999 1296017'); assert(QuickProcessDB.items[999999]==nil)
+item.hyperlink='item:123'
 itemName='Scroll of Strength'; tip=''; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 assert(overlay.attributes.type2==nil)
 tip='Locked'; itemName='Iron Lockbox'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
@@ -78,4 +92,4 @@ item.isLocked=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 alt=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
 alt=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
 combat=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-print('PASS: disenchant, comprehension, ordinary scroll exclusion, locked/unlocked boxes, translated Locked label, material exclusion, removed old mappings, restricted assignments, unlearned spells, busy items, Alt visibility, combat guard')
+print('PASS: verified 17 Forever IDs, duplicate name/tooltip rejection, unlisted comprehension assignment rejection, disenchant, comprehension, ordinary scroll exclusion, locked/unlocked boxes, translated Locked label, material exclusion, removed old mappings, restricted assignments, unlearned spells, busy items, Alt visibility, combat guard')

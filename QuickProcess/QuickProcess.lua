@@ -2,17 +2,28 @@ local addon = CreateFrame("Frame")
 local overlays, elapsed, overlayCount = {}, 0, 0
 local trackedCount, eligibleCount = 0, 0
 local COMPREHEND_SCROLL = 1296017
+-- Exact item IDs from Wowhead Forever Comprehension (skill 3012).
+-- https://www.wowhead.com/forever/skill=3012/comprehension
 local scrollIDs = {
-    [211780]=true, [211784]=true, [211785]=true, [211786]=true, [211787]=true,
-    [211853]=true, [211854]=true, [211855]=true,
-    [213543]=true, [213544]=true, [213545]=true, [213546]=true, [213547]=true,
-    [281015]=true, [281016]=true, [281017]=true, [281018]=true,
+    [211780]=true, -- Scroll: KWYJIBO (Comprehension 1)
+    [211784]=true, -- Scroll: WUBBA WUBBA (Comprehension 15)
+    [211785]=true, -- Scroll: CWAL (Comprehension 1)
+    [211786]=true, -- Scroll: CHAP BALK WELLES (Comprehension 1)
+    [211787]=true, -- Scroll: LOWER PING WHOMEVER (Comprehension 1)
+    [211853]=true, -- Scroll: VOCE WELL (Comprehension 15)
+    [211854]=true, -- Scroll: OMIT KESA (Comprehension 15)
+    [211855]=true, -- Scroll: STHENIC LUNATE (Comprehension 15)
+    [213543]=true, -- Scroll: UPDOG (Comprehension 50)
+    [213544]=true, -- Scroll: TOPAZ YORAK (Comprehension 50)
+    [213545]=true, -- Scroll: PEATCHY ATTAX (Comprehension 50)
+    [213546]=true, -- Scroll: SHOOBEEDOOP (Comprehension 50)
+    [213547]=true, -- Scroll: THAW WORDS (Comprehension 50)
+    [281015]=true, -- Scroll: DOST OREM (Comprehension 175)
+    [281016]=true, -- Scroll: FORGOT HOOF THUD (Comprehension 175)
+    [281017]=true, -- Scroll: KEEP CLEF FOCI (Comprehension 175)
+    [281018]=true, -- Scroll: RARE SERVICHI RADAR (Comprehension 175)
 }
 local function say(s) print("|cff66ccffQuickProcess:|r " .. s) end
-local scrolls = {}
-for _, name in ipairs({"CHAP BALK WELLES", "CWAL", "KWYJIBO", "LOWER PING WHOMEVER", "OMIT KESA", "STHENIC LUNATE", "VOCE WELL", "WUBBA WUBBA", "PEATCHY ATTAX", "SHOOBEEDOOP", "THAW WORDS", "TOPAZ YORAK", "UPDOG", "DOST OREM", "FORGOT HOOF THUD", "KEEP CLEF FOCI", "RARE SERVICHI RADAR"}) do
-    scrolls["Scroll: " .. name] = true
-end
 local function spellInfo(id)
     if id == "Comprehend Scroll" then id = COMPREHEND_SCROLL end
     if C_Spell and C_Spell.GetSpellInfo then
@@ -77,7 +88,9 @@ local function choose(bag, slot)
     local custom = QuickProcessDB.items[id]
     if custom then
         local spell, spellID = supportedSpell(custom)
-        if spell then return spell, spellID end
+        if spell and (spell ~= learned(COMPREHEND_SCROLL) or scrollIDs[id]) then
+            return spell, spellID
+        end
     end
     if scrollIDs[id] then return learned(COMPREHEND_SCROLL) end
     local getInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
@@ -86,9 +99,6 @@ local function choose(bag, slot)
     if not name then return end -- Wait for uncached item data.
     local text = tooltipText(bag, slot)
     if pickable(text) then return learned(1804) end
-    if scrolls[name] or text:find("Requires Comprehension", 1, true) then
-        return learned("Comprehend Scroll")
-    end
     if quality and quality >= 2 and quality <= 4 and (classID == 2 or classID == 4) then
         return learned(13262)
     end
@@ -240,8 +250,13 @@ SlashCmdList.QUICKPROCESS = function(message)
     if id then
         if spell:find("[\r\n]") or spell:find("/", 1, true) then say("Enter a spell name or ID."); return end
         local value = tonumber(spell) or spell
-        if not supportedSpell(value) then
+        local selectedSpell = supportedSpell(value)
+        if not selectedSpell then
             say("Choose a learned Pick Lock, Comprehend Scroll or Disenchant ability.")
+            return
+        end
+        if selectedSpell == learned(COMPREHEND_SCROLL) and not scrollIDs[tonumber(id)] then
+            say("That item is not in the verified Forever Comprehension scroll list.")
             return
         end
         QuickProcessDB.items[tonumber(id)] = value
