@@ -1,5 +1,5 @@
 local addon = CreateFrame("Frame")
-local overlays, elapsed = {}, 0
+local overlays, elapsed, overlayCount = {}, 0, 0
 local function say(s) print("|cff66ccffQuickProcess:|r " .. s) end
 local scrolls = {}
 for _, name in ipairs({"CHAP BALK WELLES", "CWAL", "KWYJIBO", "LOWER PING WHOMEVER", "OMIT KESA", "STHENIC LUNATE", "VOCE WELL", "WUBBA WUBBA", "PEATCHY ATTAX", "SHOOBEEDOOP", "THAW WORDS", "TOPAZ YORAK", "UPDOG", "DOST OREM", "FORGOT HOOF THUD", "KEEP CLEF FOCI", "RARE SERVICHI RADAR"}) do
@@ -104,19 +104,27 @@ local function updateButton(button)
         return
     end
     if not overlay then
-        overlay = CreateFrame("Button", nil, button, "SecureActionButtonTemplate")
+        overlayCount = overlayCount + 1
+        overlay = CreateFrame("Button", "QuickProcessItemAction" .. overlayCount, button,
+            "SecureActionButtonTemplate,SecureHandlerEnterLeaveTemplate,SecureHandlerShowHideTemplate")
+        -- A bag action wins over any enemy-hover binding until the pointer leaves.
+        overlay:SetAttribute("_onenter", [[
+            self:SetBindingClick(true, "ALT-BUTTON2", self:GetName(), "RightButton")
+        ]])
+        overlay:SetAttribute("_onleave", [[ self:ClearBindings() ]])
+        overlay:SetAttribute("_onhide", [[ self:ClearBindings() ]])
         overlay:SetAllPoints(button)
         overlay:SetFrameLevel(button:GetFrameLevel() + 10)
         overlay:RegisterForClicks("RightButtonUp", "RightButtonDown")
         if overlay.SetPassThroughButtons then overlay:SetPassThroughButtons("LeftButton", "MiddleButton") end
-        overlay:SetScript("OnEnter", function(self)
+        overlay:HookScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             local b, s = location(button)
             GameTooltip:SetBagItem(b, s)
             GameTooltip:AddLine("Alt + right-click: " .. (self.processSpell or ""), 0.4, 0.8, 1)
             GameTooltip:Show()
         end)
-        overlay:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        overlay:HookScript("OnLeave", function() GameTooltip:Hide() end)
         overlays[button] = overlay
         overlay:Hide()
     end
@@ -157,6 +165,10 @@ addon:SetScript("OnUpdate", function(_, delta)
 end)
 SLASH_QUICKPROCESS1 = "/qp"
 SlashCmdList.QUICKPROCESS = function(message)
+    if message == "ranged" and QuickProcessRangedWeapon and QuickProcessRangedWeapon.Status then
+        QuickProcessRangedWeapon.Status()
+        return
+    end
     if InCombatLockdown() then say("Change settings after combat."); return end
     local id, spell = message:match("^bind%s+(%d+)%s+(.+)$")
     if id then
@@ -173,6 +185,7 @@ SlashCmdList.QUICKPROCESS = function(message)
     id = message:match("^unbind%s+(%d+)$")
     if id then QuickProcessDB.items[tonumber(id)] = nil; refresh(); say("Assignment removed."); return end
     say("Alt + right-click: Pick Lock, Comprehend Scroll or Disenchant when eligible and learned.")
+    say("/qp ranged — show the detected ranged attack and pending equipment changes.")
     say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign Pick Lock, Comprehend Scroll or Disenchant.")
     say("/qp unbind ITEM_ID — remove an assignment. Default Blizzard bags only; outside combat.")
 end

@@ -1,8 +1,10 @@
 ## Interface: 16001
 ## Title: QuickProcess
-## Notes: Alt-right-click bag items to process them.
+## Notes: Alt-right-click items to process them or enemies to use ranged attacks.
 ## Author: QuickProcess contributors
-## Version: 0.3.0-beta
+## Version: 0.4.0-beta
 ## SavedVariables: QuickProcessDB
 QuickProcess.lua
+RangedWeapon.lua
+Ranged.lua
 Minimap.lua
