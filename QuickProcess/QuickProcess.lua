@@ -1,7 +1,7 @@
 local addon = CreateFrame("Frame")
 local overlays, elapsed, overlayCount = {}, 0, 0
-local trackedCount, eligibleCount = 0, 0
-local VERSION = "0.4.3-beta"
+local trackedCount, eligibleCount, eqolTrackedCount = 0, 0, 0
+local VERSION = "0.4.4-beta"
 local COMPREHEND_SCROLL = 1296017
 -- Exact item IDs from Wowhead Forever Comprehension (skill 3012).
 -- https://www.wowhead.com/forever/skill=3012/comprehension
@@ -178,12 +178,16 @@ local function updateButton(button)
 end
 local function refresh()
     if InCombatLockdown() or not QuickProcessDB then return end
-    trackedCount, eligibleCount = 0, 0
+    trackedCount, eligibleCount, eqolTrackedCount = 0, 0, 0
     local seen, seenFrames = {}, {}
-    local function visit(button)
+    local function visit(button, source)
         if not button or seen[button] then return end
         seen[button] = true
+        local before = trackedCount
         updateButton(button)
+        if source == "EnhanceQoL" and trackedCount > before then
+            eqolTrackedCount = eqolTrackedCount + 1
+        end
     end
     local function container(frame)
         if not frame or seenFrames[frame] then return end
@@ -195,6 +199,18 @@ local function refresh()
             for button in frame.itemButtonPool:EnumerateActive() do visit(button) end
         elseif frame.Items then
             for _, button in ipairs(frame.Items) do visit(button) end
+        end
+    end
+    -- Enhance QoL Bags 13.20.1-forever publishes its custom slot buttons here.
+    -- Read existing buttons only: do not call its constructors, change its settings,
+    -- or overwrite any of its scripts. Re-read on refresh for load-on-demand bags.
+    local eqol = _G.EnhanceQoL
+    local bags = eqol and eqol.Bags
+    local state = bags and bags.variables and bags.variables.state
+    if state then
+        for _, button in pairs(state.buttons or {}) do visit(button, "EnhanceQoL") end
+        for _, bagButtons in pairs(state.itemButtonsByBag or {}) do
+            for _, button in pairs(bagButtons) do visit(button, "EnhanceQoL") end
         end
     end
     if ContainerFrameUtil_EnumerateContainerFrames then
@@ -213,6 +229,7 @@ local function status()
     local spell, id = learned(COMPREHEND_SCROLL)
     say("Comprehend Scroll: " .. (spell and (spell .. " (" .. id .. ") learned") or "not learned/detected"))
     say("Visible bag buttons: " .. trackedCount .. "; eligible processing items: " .. eligibleCount .. ".")
+    if _G.EnhanceQoL then say("Enhance QoL bag buttons detected: " .. eqolTrackedCount .. ".") end
     say("Use Alt + right-click outside combat. Ordinary right-click does not comprehend scrolls.")
 end
 local function scanBags()
@@ -238,7 +255,7 @@ addon:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         QuickProcessDB = QuickProcessDB or {}
         QuickProcessDB.items = QuickProcessDB.items or {}
-        say("Loaded v" .. VERSION .. ". Alt + right-click an eligible item in the default bags. /qp for help.")
+        say("Loaded v" .. VERSION .. ". Alt + right-click an eligible bag item. /qp for help.")
     end
     refresh()
 end)
@@ -278,5 +295,5 @@ SlashCmdList.QUICKPROCESS = function(message)
     say("/qp status — show Comprehend Scroll and visible-bag detection. /qp scan — list bag-item decisions.")
     say("/qp ranged — show the detected ranged attack and pending equipment changes.")
     say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign Pick Lock, Comprehend Scroll or Disenchant.")
-    say("/qp unbind ITEM_ID — remove an assignment. Default Blizzard bags only; outside combat.")
+    say("/qp unbind ITEM_ID — remove an assignment. Blizzard or Enhance QoL bags; outside combat.")
 end
