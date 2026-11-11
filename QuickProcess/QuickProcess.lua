@@ -23,6 +23,19 @@ local function learned(id)
         return name
     end
 end
+local function supportedSpell(value)
+    local name = learned(value)
+    if not name then return end
+    for _, ability in ipairs({1804, 13262, "Comprehend Scroll"}) do
+        if name == learned(ability) then return name end
+    end
+end
+local function pickable(text)
+    -- ContainerItemInfo.isLocked means busy/moving, not a lock to pick.
+    local locked = LOCKED or "Locked"
+    if ("\n" .. text .. "\n"):find("\n" .. locked .. "\n", 1, true) then return true end
+    return text:find("Requires Lockpicking", 1, true) ~= nil
+end
 local scan = CreateFrame("GameTooltip", "QuickProcessScanTooltip", UIParent, "GameTooltipTemplate")
 local function tooltipText(bag, slot)
     scan:SetOwner(UIParent, "ANCHOR_NONE")
@@ -51,18 +64,18 @@ local function choose(bag, slot)
     local id = tonumber(info.hyperlink:match("item:(%d+)"))
     if not id then return end
     local custom = QuickProcessDB.items[id]
-    if custom then return learned(custom) end
+    if custom then
+        local spell = supportedSpell(custom)
+        if spell then return spell end
+    end
     local getInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
     if not getInfo then return end
     local name, _, quality, _, _, _, _, _, _, _, _, classID = getInfo(info.hyperlink)
     if not name then return end -- Wait for uncached item data.
     local text = tooltipText(bag, slot)
+    if pickable(text) then return learned(1804) end
     if scrolls[name] or text:find("Requires Comprehension", 1, true) then
         return learned("Comprehend Scroll")
-    end
-    if (info.stackCount or 0) >= 5 then
-        if text:find("Prospectable", 1, true) then return learned(31252) end
-        if text:find("Millable", 1, true) then return learned(51005) end
     end
     if quality and quality >= 2 and quality <= 4 and (classID == 2 or classID == 4) then
         return learned(13262)
@@ -100,7 +113,7 @@ local function updateButton(button)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             local b, s = location(button)
             GameTooltip:SetBagItem(b, s)
-            GameTooltip:AddLine("Ctrl + right-click: " .. (self.processSpell or ""), 0.4, 0.8, 1)
+            GameTooltip:AddLine("Alt + right-click: " .. (self.processSpell or ""), 0.4, 0.8, 1)
             GameTooltip:Show()
         end)
         overlay:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -109,12 +122,12 @@ local function updateButton(button)
     end
     -- All protected attributes are prepared outside combat, before the click.
     local action = spell .. "\n" .. bag .. " " .. slot
-    if overlay.action == action and overlay:IsShown() == IsControlKeyDown() then return end
+    if overlay.action == action and overlay:IsShown() == IsAltKeyDown() then return end
     overlay.action = action
     overlay.processSpell = spell
     overlay:SetAttribute("type2", "macro")
     overlay:SetAttribute("macrotext2", "/cast " .. spell .. "\n/use " .. bag .. " " .. slot)
-    RegisterStateDriver(overlay, "visibility", "[combat] hide; [mod:ctrl] show; hide")
+    RegisterStateDriver(overlay, "visibility", "[combat] hide; [mod:alt] show; hide")
 end
 local function refresh()
     if InCombatLockdown() or not QuickProcessDB then return end
@@ -134,7 +147,7 @@ addon:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         QuickProcessDB = QuickProcessDB or {}
         QuickProcessDB.items = QuickProcessDB.items or {}
-        say("Loaded. Ctrl + right-click an eligible item in the default bags. /qp for help.")
+        say("Loaded. Alt + right-click an eligible item in the default bags. /qp for help.")
     end
     refresh()
 end)
@@ -148,13 +161,18 @@ SlashCmdList.QUICKPROCESS = function(message)
     local id, spell = message:match("^bind%s+(%d+)%s+(.+)$")
     if id then
         if spell:find("[\r\n]") or spell:find("/", 1, true) then say("Enter a spell name or ID."); return end
-        QuickProcessDB.items[tonumber(id)] = tonumber(spell) or spell
+        local value = tonumber(spell) or spell
+        if not supportedSpell(value) then
+            say("Choose a learned Pick Lock, Comprehend Scroll or Disenchant ability.")
+            return
+        end
+        QuickProcessDB.items[tonumber(id)] = value
         say("Item " .. id .. " assigned to " .. spell .. ". The spell must be learned.")
         refresh(); return
     end
     id = message:match("^unbind%s+(%d+)$")
     if id then QuickProcessDB.items[tonumber(id)] = nil; refresh(); say("Assignment removed."); return end
-    say("Ctrl + right-click: Disenchant, Comprehend Scroll, Prospecting or Milling when eligible and learned.")
-    say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign another item-processing skill.")
+    say("Alt + right-click: Pick Lock, Comprehend Scroll or Disenchant when eligible and learned.")
+    say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign Pick Lock, Comprehend Scroll or Disenchant.")
     say("/qp unbind ITEM_ID — remove an assignment. Default Blizzard bags only; outside combat.")
 end
