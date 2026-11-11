@@ -1,6 +1,7 @@
 local addon = CreateFrame("Frame")
 local overlays, elapsed, overlayCount = {}, 0, 0
 local trackedCount, eligibleCount = 0, 0
+local VERSION = "0.4.3-beta"
 local COMPREHEND_SCROLL = 1296017
 -- Exact item IDs from Wowhead Forever Comprehension (skill 3012).
 -- https://www.wowhead.com/forever/skill=3012/comprehension
@@ -122,10 +123,10 @@ local function updateButton(button)
         if overlay then
             UnregisterStateDriver(overlay, "visibility")
             overlay:Hide()
-            overlay:SetAttribute("type2", nil)
-            overlay:SetAttribute("spell2", nil)
-            overlay:SetAttribute("target-bag2", nil)
-            overlay:SetAttribute("target-slot2", nil)
+            overlay:SetAttribute("*type2", nil)
+            overlay:SetAttribute("*spell2", nil)
+            overlay:SetAttribute("*target-bag2", nil)
+            overlay:SetAttribute("*target-slot2", nil)
             overlay.action = nil
         end
         return
@@ -141,6 +142,10 @@ local function updateButton(button)
         overlay:SetAttribute("_onleave", [[ self:ClearBindings() ]])
         overlay:SetAttribute("_onhide", [[ self:ClearBindings() ]])
         overlay:SetAllPoints(button)
+        local above = {BACKGROUND="LOW", LOW="MEDIUM", MEDIUM="HIGH", HIGH="DIALOG",
+            DIALOG="FULLSCREEN", FULLSCREEN="FULLSCREEN_DIALOG", FULLSCREEN_DIALOG="TOOLTIP"}
+        local strata = button.GetFrameStrata and button:GetFrameStrata() or "MEDIUM"
+        overlay:SetFrameStrata(above[strata] or "TOOLTIP")
         overlay:SetFrameLevel(button:GetFrameLevel() + 10)
         overlay:RegisterForClicks("RightButtonUp", "RightButtonDown")
         overlay:SetAttribute("useOnKeyDown", false)
@@ -161,11 +166,14 @@ local function updateButton(button)
     if overlay.action == action and overlay:IsShown() == IsAltKeyDown() then return end
     overlay.action = action
     overlay.processSpell = spell
+    -- A button-specific attribute without a modifier prefix (type2/spell2) only
+    -- matches unmodified clicks. Wildcards retain the action while Alt is held.
+    -- Visibility still restricts this overlay to Alt, outside combat.
     -- Forever's SecureTemplates.lua targets this bag slot immediately after casting.
-    overlay:SetAttribute("type2", "spell")
-    overlay:SetAttribute("spell2", spellID or spell)
-    overlay:SetAttribute("target-bag2", bag)
-    overlay:SetAttribute("target-slot2", slot)
+    overlay:SetAttribute("*type2", "spell")
+    overlay:SetAttribute("*spell2", spellID or spell)
+    overlay:SetAttribute("*target-bag2", bag)
+    overlay:SetAttribute("*target-slot2", slot)
     RegisterStateDriver(overlay, "visibility", "[combat] hide; [mod:alt] show; hide")
 end
 local function refresh()
@@ -200,6 +208,7 @@ local function refresh()
     end
 end
 local function status()
+    say("Version " .. VERSION)
     if not InCombatLockdown() then refresh() end
     local spell, id = learned(COMPREHEND_SCROLL)
     say("Comprehend Scroll: " .. (spell and (spell .. " (" .. id .. ") learned") or "not learned/detected"))
@@ -229,7 +238,7 @@ addon:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         QuickProcessDB = QuickProcessDB or {}
         QuickProcessDB.items = QuickProcessDB.items or {}
-        say("Loaded. Alt + right-click an eligible item in the default bags. /qp for help.")
+        say("Loaded v" .. VERSION .. ". Alt + right-click an eligible item in the default bags. /qp for help.")
     end
     refresh()
 end)

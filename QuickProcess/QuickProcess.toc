@@ -2,7 +2,7 @@
 ## Title: QuickProcess
 ## Notes: Alt-right-click items to process them or enemies to use ranged attacks.
 ## Author: QuickProcess contributors
-## Version: 0.4.2-beta
+## Version: 0.4.3-beta
 ## SavedVariables: QuickProcessDB
 QuickProcess.lua
 RangedWeapon.lua

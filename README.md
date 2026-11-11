@@ -22,6 +22,8 @@ Other items retain normal bag behavior. Left-click passes through the overlay wh
 
 Version 0.4.2 verifies the complete whitelist against the supplied Wowhead Forever Comprehension page and removes name/tooltip-based scroll detection.
 
+Version 0.4.3 fixes the secure modifier lookup: bag actions use wildcard-modifier right-click attributes (`*type2`, `*spell2`, and matching item-target attributes). Previously the tooltip could recognize a scroll while Alt + right-click had no matching secure action. Overlays also sit above the bag's display layer. The startup message and `/qp status` show the installed version.
+
 ## Troubleshooting scrolls
 
 Use **Alt + right-click**, outside combat. Ordinary right-click does not cast Comprehend Scroll. Version 0.4.1 fixes Forever's pooled bag-button discovery and the combined bag iterator, and uses a secure spell action with the selected bag/slot as its item target. It also resolves Comprehend Scroll by its canonical spell ID instead of an ambiguous English name.
@@ -53,6 +55,6 @@ Use a numeric spell ID where possible, especially on non-English clients. A cust
 
 Mocked API checks passed for disenchant selection, comprehension selection, pick-lock selection, already unlocked boxes, ordinary scroll exclusion, unsupported materials, unknown spells, restricted custom mappings, busy items, Alt-only visibility, and the combat update guard. Forever-layout regression checks cover pooled buttons, combined-bag index/value iteration, canonical spell ID, localized item IDs, uncached scroll names, explicit player spell bank, and recycled slot targets. The previous version fails the pooled-layout regression; the fixed version passes. Lua source loads under Lua 5.4 and uses syntax compatible with WoW's Lua 5.1.
 
-Ranged-attack mock checks also passed for weapon selection, Hunter Auto Shot preference, custom attack discovery, enemy-hover binding, mouseover target/cast guards, auto-fire macro syntax, combat-safe routing, queued equipment updates, unequipping, and bag-binding cleanup. These mocks do not reproduce the game engine.
+Ranged-attack mock checks also passed for weapon selection, Hunter Auto Shot preference, custom attack discovery, enemy-hover binding, mouseover target/cast guards, auto-fire macro syntax, combat-safe routing, queued equipment updates, unequipping, and bag-binding cleanup. Alt-modifier resolution regressions also passed: the prior build has no matching secure action under Alt, while the fixed build resolves Comprehend Scroll and the intended bag slot for all 17 verified IDs. These mocks do not reproduce the game engine.
 
 The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Unlisted scroll IDs are not comprehended, even if their name or tooltip matches. Update the verified list if the Forever database adds more eligible scrolls. The repository documents each ID and source in docs/forever-scrolls.md.
