@@ -1,0 +1,37 @@
+# QuickProcess — Forever 1.60.1 beta
+
+Interface 16001; intended for build 70888.
+
+## Install
+
+Exit WoW, extract the archive, and copy the QuickProcess folder into the game client's Interface/AddOns folder. The layout must be Interface/AddOns/QuickProcess/QuickProcess.toc. Restart the client and enable QuickProcess in the character-selection AddOns list.
+
+## Use
+
+Hold Ctrl and right-click an eligible item in the default Blizzard bags outside combat. One click prepares and executes a cast on that bag slot. Wait for the cast and loot to finish before clicking again. Items are consumed according to the selected skill, including equipment destroyed by Disenchant.
+
+Automatic selection:
+- Disenchant: uncommon, rare, or epic weapons and armor, if Disenchant is learned. The game determines final eligibility and skill requirements; some equipment cannot be disenchanted.
+- Comprehend Scroll: 17 documented English scroll names or an English tooltip containing “Requires Comprehension”, if Comprehend Scroll is learned.
+- Prospecting and Milling: tooltip marked Prospectable or Millable, at least five items in the stack, and the relevant learned skill. Available only if the client supports those skills.
+
+Other items retain normal bag behavior. Left-click passes through the overlay where the client supports SetPassThroughButtons. Item processing is disabled during combat. Bank slots, equipped items, and third-party bag addons are not supported in this beta.
+
+## Minimap button
+
+The minimap launcher has a turquoise Q and gold P inside a round border. Click it for usage instructions and commands; drag it around the minimap to reposition it. Its position is saved between sessions. Press Escape or click the close button to dismiss the panel.
+
+## Additional skills / localized items
+
+Type /qp for help. To map an item to a learned targeted processing spell:
+
+    /qp bind ITEM_ID SPELL_NAME_OR_ID
+    /qp unbind ITEM_ID
+
+Use a numeric spell ID where possible, especially on non-English clients. A custom mapping overrides automatic selection for that item. Only assign targeted spells that consume/process the selected bag item. Mapping validity, target eligibility, required quantities, and skill requirements are ultimately enforced by the game.
+
+## Verification and limitations
+
+Mocked API checks passed for disenchant selection, comprehension selection, ordinary scroll exclusion, stack minimum, unknown spells, custom mappings, locked items, and the combat update guard. Lua source loads under Lua 5.4 and uses syntax compatible with WoW's Lua 5.1.
+
+The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Ordinary non-English scroll detection requires manual mappings until localized item IDs are added.

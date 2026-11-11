@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: QuickProcess
+## Notes: Ctrl-right-click bag items to process them.
+## Author: QuickProcess contributors
+## Version: 0.2.0-beta
+## SavedVariables: QuickProcessDB
+QuickProcess.lua
+Minimap.lua
