@@ -15,10 +15,16 @@ Hold Alt and right-click an eligible item in the default Blizzard bags outside c
 
 Automatic selection:
 - Disenchant: uncommon, rare, or epic weapons and armor, if Disenchant is learned. The game determines final eligibility and skill requirements; some equipment cannot be disenchanted.
-- Comprehend Scroll: 17 documented English scroll names or an English tooltip containing “Requires Comprehension”, if Comprehend Scroll is learned.
+- Comprehend Scroll: 17 documented untranslated scroll item IDs (works with localized names), with English names and a “Requires Comprehension” tooltip fallback for additional scrolls. Uses the learned Comprehend Scroll ability by spell ID 1296017.
 - Pick Lock: items whose tooltip contains a standalone Locked line (using the client translation) or “Requires Lockpicking”, if Pick Lock is learned. Already unlocked boxes retain normal behavior. The game checks your lockpicking skill and any tool requirements.
 
 Other items retain normal bag behavior. Left-click passes through the overlay where the client supports SetPassThroughButtons. Item processing is disabled during combat. Bank slots, equipped items, and third-party bag addons are not supported in this beta.
+
+## Troubleshooting scrolls
+
+Use **Alt + right-click**, outside combat. Ordinary right-click does not cast Comprehend Scroll. Version 0.4.1 fixes Forever's pooled bag-button discovery and the combined bag iterator, and uses a secure spell action with the selected bag/slot as its item target. It also resolves Comprehend Scroll by its canonical spell ID instead of an ambiguous English name.
+
+With your bags open, type `/qp status` to show whether Comprehend Scroll is learned/detected and how many visible bag buttons/items are eligible. `/qp scan` lists each bag item's selected skill. If a click still fails, report these results, the exact scroll name, and whether you use a bag addon. Third-party bags are not supported in this beta.
 
 ## Ranged attacks
 
@@ -43,8 +49,8 @@ Use a numeric spell ID where possible, especially on non-English clients. A cust
 
 ## Verification and limitations
 
-Mocked API checks passed for disenchant selection, comprehension selection, pick-lock selection, already unlocked boxes, ordinary scroll exclusion, unsupported materials, unknown spells, restricted custom mappings, busy items, Alt-only visibility, and the combat update guard. Lua source loads under Lua 5.4 and uses syntax compatible with WoW's Lua 5.1.
+Mocked API checks passed for disenchant selection, comprehension selection, pick-lock selection, already unlocked boxes, ordinary scroll exclusion, unsupported materials, unknown spells, restricted custom mappings, busy items, Alt-only visibility, and the combat update guard. Forever-layout regression checks cover pooled buttons, combined-bag index/value iteration, canonical spell ID, localized item IDs, uncached scroll names, explicit player spell bank, and recycled slot targets. The previous version fails the pooled-layout regression; the fixed version passes. Lua source loads under Lua 5.4 and uses syntax compatible with WoW's Lua 5.1.
 
 Ranged-attack mock checks also passed for weapon selection, Hunter Auto Shot preference, custom attack discovery, enemy-hover binding, mouseover target/cast guards, auto-fire macro syntax, combat-safe routing, queued equipment updates, unequipping, and bag-binding cleanup. These mocks do not reproduce the game engine.
 
-The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Ordinary non-English scroll detection requires manual mappings until localized item IDs are added.
+The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Additional untranslated scrolls outside the documented ID list may require a manual assignment on non-English clients.

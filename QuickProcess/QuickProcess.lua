@@ -1,11 +1,20 @@
 local addon = CreateFrame("Frame")
 local overlays, elapsed, overlayCount = {}, 0, 0
+local trackedCount, eligibleCount = 0, 0
+local COMPREHEND_SCROLL = 1296017
+local scrollIDs = {
+    [211780]=true, [211784]=true, [211785]=true, [211786]=true, [211787]=true,
+    [211853]=true, [211854]=true, [211855]=true,
+    [213543]=true, [213544]=true, [213545]=true, [213546]=true, [213547]=true,
+    [281015]=true, [281016]=true, [281017]=true, [281018]=true,
+}
 local function say(s) print("|cff66ccffQuickProcess:|r " .. s) end
 local scrolls = {}
 for _, name in ipairs({"CHAP BALK WELLES", "CWAL", "KWYJIBO", "LOWER PING WHOMEVER", "OMIT KESA", "STHENIC LUNATE", "VOCE WELL", "WUBBA WUBBA", "PEATCHY ATTAX", "SHOOBEEDOOP", "THAW WORDS", "TOPAZ YORAK", "UPDOG", "DOST OREM", "FORGOT HOOF THUD", "KEEP CLEF FOCI", "RARE SERVICHI RADAR"}) do
     scrolls["Scroll: " .. name] = true
 end
 local function spellInfo(id)
+    if id == "Comprehend Scroll" then id = COMPREHEND_SCROLL end
     if C_Spell and C_Spell.GetSpellInfo then
         local info = C_Spell.GetSpellInfo(id)
         return info and info.name, info and info.spellID
@@ -15,19 +24,21 @@ local function spellInfo(id)
     end
 end
 local function learned(id)
+    if id == "Comprehend Scroll" then id = COMPREHEND_SCROLL end
     local name, resolved = spellInfo(id)
     resolved = resolved or (type(id) == "number" and id)
     if not name or not resolved then return end
+    local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
     if (IsPlayerSpell and IsPlayerSpell(resolved)) or (IsSpellKnown and IsSpellKnown(resolved))
-        or (C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(resolved)) then
-        return name
+        or (C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(resolved, bank)) then
+        return name, resolved
     end
 end
 local function supportedSpell(value)
-    local name = learned(value)
+    local name, resolved = learned(value)
     if not name then return end
     for _, ability in ipairs({1804, 13262, "Comprehend Scroll"}) do
-        if name == learned(ability) then return name end
+        if name == learned(ability) then return name, resolved end
     end
 end
 local function pickable(text)
@@ -65,9 +76,10 @@ local function choose(bag, slot)
     if not id then return end
     local custom = QuickProcessDB.items[id]
     if custom then
-        local spell = supportedSpell(custom)
-        if spell then return spell end
+        local spell, spellID = supportedSpell(custom)
+        if spell then return spell, spellID end
     end
+    if scrollIDs[id] then return learned(COMPREHEND_SCROLL) end
     local getInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
     if not getInfo then return end
     local name, _, quality, _, _, _, _, _, _, _, _, classID = getInfo(info.hyperlink)
@@ -89,16 +101,21 @@ local function location(button)
     if parent and parent.GetID and button.GetID then return parent:GetID(), button:GetID() end
 end
 local function updateButton(button)
-    if not button or not button:IsShown() then return end
+    if (type(button) ~= "table" and type(button) ~= "userdata") or not button.IsShown or not button:IsShown() then return end
     local bag, slot = location(button)
     if type(bag) ~= "number" or bag < 0 or bag > 4 or not slot or slot < 1 then return end
-    local spell = choose(bag, slot)
+    trackedCount = trackedCount + 1
+    local spell, spellID = choose(bag, slot)
+    if spell then eligibleCount = eligibleCount + 1 end
     local overlay = overlays[button]
     if not spell then
         if overlay then
             UnregisterStateDriver(overlay, "visibility")
             overlay:Hide()
             overlay:SetAttribute("type2", nil)
+            overlay:SetAttribute("spell2", nil)
+            overlay:SetAttribute("target-bag2", nil)
+            overlay:SetAttribute("target-slot2", nil)
             overlay.action = nil
         end
         return
@@ -116,6 +133,7 @@ local function updateButton(button)
         overlay:SetAllPoints(button)
         overlay:SetFrameLevel(button:GetFrameLevel() + 10)
         overlay:RegisterForClicks("RightButtonUp", "RightButtonDown")
+        overlay:SetAttribute("useOnKeyDown", false)
         if overlay.SetPassThroughButtons then overlay:SetPassThroughButtons("LeftButton", "MiddleButton") end
         overlay:HookScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -129,22 +147,68 @@ local function updateButton(button)
         overlay:Hide()
     end
     -- All protected attributes are prepared outside combat, before the click.
-    local action = spell .. "\n" .. bag .. " " .. slot
+    local action = tostring(spellID or spell) .. "\n" .. bag .. " " .. slot
     if overlay.action == action and overlay:IsShown() == IsAltKeyDown() then return end
     overlay.action = action
     overlay.processSpell = spell
-    overlay:SetAttribute("type2", "macro")
-    overlay:SetAttribute("macrotext2", "/cast " .. spell .. "\n/use " .. bag .. " " .. slot)
+    -- Forever's SecureTemplates.lua targets this bag slot immediately after casting.
+    overlay:SetAttribute("type2", "spell")
+    overlay:SetAttribute("spell2", spellID or spell)
+    overlay:SetAttribute("target-bag2", bag)
+    overlay:SetAttribute("target-slot2", slot)
     RegisterStateDriver(overlay, "visibility", "[combat] hide; [mod:alt] show; hide")
 end
 local function refresh()
     if InCombatLockdown() or not QuickProcessDB then return end
-    for frame = 1, (NUM_CONTAINER_FRAMES or 13) do
-        for slot = 1, 40 do updateButton(_G["ContainerFrame" .. frame .. "Item" .. slot]) end
+    trackedCount, eligibleCount = 0, 0
+    local seen, seenFrames = {}, {}
+    local function visit(button)
+        if not button or seen[button] then return end
+        seen[button] = true
+        updateButton(button)
     end
-    local combined = ContainerFrameCombinedBags
-    if combined and combined.EnumerateItems then
-        for button in combined:EnumerateItems() do updateButton(button) end
+    local function container(frame)
+        if not frame or seenFrames[frame] then return end
+        seenFrames[frame] = true
+        if frame.EnumerateItems then
+            -- Forever returns ipairs(self.Items): the first value is an index.
+            for first, second in frame:EnumerateItems() do visit(second or first) end
+        elseif frame.itemButtonPool and frame.itemButtonPool.EnumerateActive then
+            for button in frame.itemButtonPool:EnumerateActive() do visit(button) end
+        elseif frame.Items then
+            for _, button in ipairs(frame.Items) do visit(button) end
+        end
+    end
+    if ContainerFrameUtil_EnumerateContainerFrames then
+        for first, second in ContainerFrameUtil_EnumerateContainerFrames() do container(second or first) end
+    end
+    container(ContainerFrameCombinedBags)
+    for index = 1, (NUM_CONTAINER_FRAMES or 13) do
+        container(_G["ContainerFrame" .. index])
+        -- Older layouts expose named slots instead of a pool.
+        for slot = 1, 40 do visit(_G["ContainerFrame" .. index .. "Item" .. slot]) end
+    end
+end
+local function status()
+    if not InCombatLockdown() then refresh() end
+    local spell, id = learned(COMPREHEND_SCROLL)
+    say("Comprehend Scroll: " .. (spell and (spell .. " (" .. id .. ") learned") or "not learned/detected"))
+    say("Visible bag buttons: " .. trackedCount .. "; eligible processing items: " .. eligibleCount .. ".")
+    say("Use Alt + right-click outside combat. Ordinary right-click does not comprehend scrolls.")
+end
+local function scanBags()
+    if not C_Container or not C_Container.GetContainerNumSlots then return end
+    local getInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+    for bag = 0, 4 do
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local info = itemInfo(bag, slot)
+            if info and info.hyperlink then
+                local spell, id = choose(bag, slot)
+                local name = getInfo and getInfo(info.hyperlink) or info.hyperlink
+                say("Bag " .. bag .. " slot " .. slot .. ": " .. (name or info.hyperlink)
+                    .. " -> " .. (spell and (spell .. " (" .. tostring(id) .. ")") or "no eligible learned skill"))
+            end
+        end
     end
 end
 addon:RegisterEvent("PLAYER_LOGIN")
@@ -165,6 +229,8 @@ addon:SetScript("OnUpdate", function(_, delta)
 end)
 SLASH_QUICKPROCESS1 = "/qp"
 SlashCmdList.QUICKPROCESS = function(message)
+    if message == "status" then status(); return end
+    if message == "scan" then scanBags(); return end
     if message == "ranged" and QuickProcessRangedWeapon and QuickProcessRangedWeapon.Status then
         QuickProcessRangedWeapon.Status()
         return
@@ -185,6 +251,7 @@ SlashCmdList.QUICKPROCESS = function(message)
     id = message:match("^unbind%s+(%d+)$")
     if id then QuickProcessDB.items[tonumber(id)] = nil; refresh(); say("Assignment removed."); return end
     say("Alt + right-click: Pick Lock, Comprehend Scroll or Disenchant when eligible and learned.")
+    say("/qp status — show Comprehend Scroll and visible-bag detection. /qp scan — list bag-item decisions.")
     say("/qp ranged — show the detected ranged attack and pending equipment changes.")
     say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign Pick Lock, Comprehend Scroll or Disenchant.")
     say("/qp unbind ITEM_ID — remove an assignment. Default Blizzard bags only; outside combat.")

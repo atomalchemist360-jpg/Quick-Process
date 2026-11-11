@@ -1,0 +1,108 @@
+local frames, scripts, attrs = {}, {}, {}
+UIParent = {}; SlashCmdList = {}; NUM_CONTAINER_FRAMES = 1
+local alt = true
+local combat, known, item = false, true, {stackCount=1, hyperlink='item:123',quality=2}
+local kind, itemName, tip = 2, 'Sword', ''
+local function frame()
+ local f = {shown=true, attributes={},name='TestBagAction'}
+ function f:GetName() return self.name end
+ function f:SetBindingClick(priority,key,name,button) self.binding={priority,key,name,button} end
+ function f:ClearBindings() self.binding=nil end
+ function f:SetScript(k,v) self[k]=v end
+ function f:HookScript(k,v) self[k]=v end
+ function f:SetAttribute(k,v) self.attributes[k]=v end
+ function f:IsShown() return self.shown end
+ function f:Hide() self.shown=false end
+ function f:Show() self.shown=true end
+ function f:GetFrameLevel() return 1 end
+ function f:GetID() return 1 end
+ function f:GetBagID() return 0 end
+ function f:NumLines() return 1 end
+ for _, k in ipairs({'SetOwner','ClearLines','SetBagItem','SetAllPoints','SetFrameLevel','RegisterForClicks','SetPassThroughButtons','RegisterEvent'}) do f[k]=function() end end
+ return f
+end
+function CreateFrame(_,name,parent,template)
+ local f=frame(); frames[#frames+1]=f
+ if template and template:find('SecureActionButtonTemplate',1,true) then attrs[#attrs+1]=f end
+ return f
+end
+function InCombatLockdown() return combat end
+function IsAltKeyDown() return alt end
+function RegisterStateDriver(f,_,condition) assert(not combat); f.condition=condition; if alt then f:Show() else f:Hide() end end
+function UnregisterStateDriver() assert(not combat) end
+function IsPlayerSpell() return known end
+C_Spell={GetSpellInfo=function(id) return {name=({[1296017]='Comprehend Scroll',[1804]='Pick Lock',[13262]='Disenchant',[31252]='Prospecting',[51005]='Milling'})[id] or id,spellID=type(id)=='number' and id or 999} end}
+C_Container={GetContainerItemInfo=function() return item end}
+C_Item={GetItemInfo=function() return itemName,nil,item.quality,nil,nil,nil,nil,nil,nil,nil,nil,kind end}
+QuickProcessScanTooltipTextLeft1={GetText=function() return tip end}
+local bagButton=frame()
+ContainerFrame1={Items={bagButton}}
+function ContainerFrame1:EnumerateItems() return ipairs(self.Items) end
+ContainerFrameCombinedBags={Items={bagButton}}
+function ContainerFrameCombinedBags:EnumerateItems() return ipairs(self.Items) end
+function ContainerFrameUtil_EnumerateContainerFrames()
+ return ipairs({ContainerFrame1,ContainerFrameCombinedBags})
+end
+dofile('QuickProcess/QuickProcess.lua')
+local addon=frames[1]
+addon.OnEvent(addon,'PLAYER_LOGIN')
+local overlay=attrs[1]
+assert(overlay.attributes.useOnKeyDown==false)
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==13262)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+assert(overlay.condition=='[combat] hide; [mod:alt] show; hide')
+assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
+assert(overlay.binding[2]=='ALT-BUTTON2' and overlay.binding[4]=='RightButton')
+assert(load('local self=...; '..overlay.attributes._onleave))(overlay); assert(not overlay.binding)
+assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
+assert(load('local self=...; '..overlay.attributes._onhide))(overlay); assert(not overlay.binding)
+kind=7; itemName='Scroll: CWAL'; item.quality=1
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1296017)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+itemName='Scroll of Strength'; tip=''; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.type2==nil)
+tip='Locked'; itemName='Iron Lockbox'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+tip='Requires Lockpicking (125)'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+LOCKED='Verrouillé'; tip=LOCKED; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+tip='Unlocked'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+for _, marker in ipairs({'Prospectable','Millable'}) do
+ tip=marker; item.stackCount=20; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+end
+QuickProcessDB.items[123]=51005; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+SlashCmdList.QUICKPROCESS('bind 123 31252'); assert(QuickProcessDB.items[123]==51005)
+known=false; tip='Locked'; addon.OnEvent(addon,'SPELLS_CHANGED'); assert(overlay.attributes.type2==nil)
+known=true; tip=''; SlashCmdList.QUICKPROCESS('bind 123 1804'); assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
+item.isLocked=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
+item.isLocked=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+alt=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
+alt=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
+combat=false
+QuickProcessDB.items={}
+item.hyperlink='item:211780'; itemName='Localized untranslated scroll'; tip=''
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes.spell2==1296017)
+-- Standard C_SpellBook signature must receive the player bank.
+IsPlayerSpell=nil
+Enum={SpellBookSpellBank={Player=7}}
+C_SpellBook={IsSpellKnown=function(id,bank) assert(bank==7); return id==1296017 end}
+addon.OnEvent(addon,'SPELLS_CHANGED'); assert(overlay.attributes.spell2==1296017)
+SlashCmdList.QUICKPROCESS('status')
+assert(#attrs==1) -- Same pooled item encountered via multiple frame paths is deduplicated.
+-- A recycled button must target its new bag slot.
+bagButton.GetBagID=function() return 2 end
+bagButton.GetID=function() return 8 end
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+assert(overlay.attributes['target-bag2']==2 and overlay.attributes['target-slot2']==8)
+-- Known scroll IDs do not need cached localized names.
+C_Item.GetItemInfo=function() return nil end
+addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.spell2==1296017)
+combat=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
+print('PASS: pooled/combined bag enumeration, canonical spell ID, localized scroll IDs, explicit spell bank, recycled slot targeting, uncached scrolls, disenchant, comprehension, ordinary scroll exclusion, locked/unlocked boxes, translated Locked label, material exclusion, removed old mappings, restricted assignments, unlearned spells, busy items, Alt visibility, combat guard')

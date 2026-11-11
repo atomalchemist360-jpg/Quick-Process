@@ -31,7 +31,7 @@ function IsAltKeyDown() return alt end
 function RegisterStateDriver(f,_,condition) assert(not combat); f.condition=condition; if alt then f:Show() else f:Hide() end end
 function UnregisterStateDriver() assert(not combat) end
 function IsPlayerSpell() return known end
-C_Spell={GetSpellInfo=function(id) return {name=({[1804]='Pick Lock',[13262]='Disenchant',[31252]='Prospecting',[51005]='Milling'})[id] or id,spellID=type(id)=='number' and id or 999} end}
+C_Spell={GetSpellInfo=function(id) return {name=({[1296017]='Comprehend Scroll',[1804]='Pick Lock',[13262]='Disenchant',[31252]='Prospecting',[51005]='Milling'})[id] or id,spellID=type(id)=='number' and id or 999} end}
 C_Container={GetContainerItemInfo=function() return item end}
 C_Item={GetItemInfo=function() return itemName,nil,item.quality,nil,nil,nil,nil,nil,nil,nil,nil,kind end}
 QuickProcessScanTooltipTextLeft1={GetText=function() return tip end}
@@ -40,7 +40,9 @@ dofile('QuickProcess/QuickProcess.lua')
 local addon=frames[1]
 addon.OnEvent(addon,'PLAYER_LOGIN')
 local overlay=attrs[1]
-assert(overlay.attributes.macrotext2=='/cast Disenchant\n/use 0 1')
+assert(overlay.attributes.useOnKeyDown==false)
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==13262)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 assert(overlay.condition=='[combat] hide; [mod:alt] show; hide')
 assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
 assert(overlay.binding[2]=='ALT-BUTTON2' and overlay.binding[4]=='RightButton')
@@ -49,15 +51,19 @@ assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
 assert(load('local self=...; '..overlay.attributes._onhide))(overlay); assert(not overlay.binding)
 kind=7; itemName='Scroll: CWAL'; item.quality=1
 addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-assert(overlay.attributes.macrotext2=='/cast Comprehend Scroll\n/use 0 1')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1296017)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 itemName='Scroll of Strength'; tip=''; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 assert(overlay.attributes.type2==nil)
 tip='Locked'; itemName='Iron Lockbox'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-assert(overlay.attributes.macrotext2=='/cast Pick Lock\n/use 0 1')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 tip='Requires Lockpicking (125)'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-assert(overlay.attributes.macrotext2=='/cast Pick Lock\n/use 0 1')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 LOCKED='Verrouillé'; tip=LOCKED; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-assert(overlay.attributes.macrotext2=='/cast Pick Lock\n/use 0 1')
+assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 tip='Unlocked'; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
 for _, marker in ipairs({'Prospectable','Millable'}) do
  tip=marker; item.stackCount=20; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
@@ -65,7 +71,8 @@ end
 QuickProcessDB.items[123]=51005; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
 SlashCmdList.QUICKPROCESS('bind 123 31252'); assert(QuickProcessDB.items[123]==51005)
 known=false; tip='Locked'; addon.OnEvent(addon,'SPELLS_CHANGED'); assert(overlay.attributes.type2==nil)
-known=true; tip=''; SlashCmdList.QUICKPROCESS('bind 123 1804'); assert(overlay.attributes.macrotext2=='/cast Pick Lock\n/use 0 1')
+known=true; tip=''; SlashCmdList.QUICKPROCESS('bind 123 1804'); assert(overlay.attributes.type2=='spell' and overlay.attributes.spell2==1804)
+assert(overlay.attributes['target-bag2']==0 and overlay.attributes['target-slot2']==1)
 item.isLocked=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes.type2==nil)
 item.isLocked=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 alt=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
