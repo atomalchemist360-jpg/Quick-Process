@@ -9,9 +9,15 @@ Interface 16001; intended for build 70888.
 
 Exit WoW, extract the archive, and copy the QuickProcess folder into the game client's Interface/AddOns folder. The layout must be Interface/AddOns/QuickProcess/QuickProcess.toc. Restart the client and enable QuickProcess in the character-selection AddOns list.
 
+## Settings and addon conflicts
+
+Click the QP minimap button or type `/qp settings` (or `/qp`) to open the settings menu. Choose Alt, Ctrl, Shift, or a combination with right-click for all bag processing. The choice saves automatically across sessions and takes effect immediately outside combat. Additional modifiers must match exactly.
+
+For WoWdee's Alt-click conflict, select **Ctrl + right-click** or **Ctrl + Shift + right-click**. QuickProcess clears its old bag bindings, including those for closed bags. Enemy ranged attacks remain **Alt + right-click** and are configured independently of this bag setting. Settings changes are disabled during combat.
+
 ## Bag items
 
-Hold Alt and right-click an eligible item in Blizzard or Enhance QoL bags outside combat. One click prepares and executes a cast on that bag slot. Wait for the cast and loot to finish before clicking again. Items are consumed according to the selected skill, including equipment destroyed by Disenchant.
+Hold the selected modifier (Alt by default) and right-click an eligible item in Blizzard or Enhance QoL bags outside combat. One click prepares and executes a cast on that bag slot. Wait for the cast and loot to finish before clicking again. Items are consumed according to the selected skill, including equipment destroyed by Disenchant.
 
 Automatic selection:
 - Disenchant: uncommon, rare, or epic weapons and armor, if Disenchant is learned. The game determines final eligibility and skill requirements; some equipment cannot be disenchanted.
@@ -28,7 +34,7 @@ Version 0.4.4 adds detection of Enhance QoL's custom bag buttons, using its publ
 
 ## Troubleshooting scrolls
 
-Use **Alt + right-click**, outside combat. Ordinary right-click does not cast Comprehend Scroll. Version 0.4.1 fixes Forever's pooled bag-button discovery and the combined bag iterator, and uses a secure spell action with the selected bag/slot as its item target. It also resolves Comprehend Scroll by its canonical spell ID instead of an ambiguous English name.
+Use your selected bag shortcut (**Alt + right-click** by default), outside combat. Ordinary right-click does not cast Comprehend Scroll. Version 0.4.1 fixes Forever's pooled bag-button discovery and the combined bag iterator, and uses a secure spell action with the selected bag/slot as its item target. It also resolves Comprehend Scroll by its canonical spell ID instead of an ambiguous English name.
 
 With your bags open, type `/qp status` to show whether Comprehend Scroll is learned/detected and how many visible bag buttons/items are eligible. `/qp scan` lists each bag item's selected skill. If a click still fails, report these results, the exact scroll name, and whether you use a bag addon. Blizzard bags and Enhance QoL Bags are supported; other bag replacements are not supported in this beta.
 
@@ -36,13 +42,13 @@ With your bags open, type `/qp status` to show whether Comprehend Scroll is lear
 
 Equip a wand, bow, gun, crossbow, or thrown weapon and learn its attack. **Alt + right-click a living enemy under the pointer** to select it and attempt the equipped weapon's ranged attack. Hunters use Auto Shot for bows, guns, and crossbows when learned. Other characters use their weapon's Shoot ability; thrown weapons use Throw. Repeated clicks request auto-fire without toggling it off; Throw may require a click for each attack.
 
-The ranged shortcut works during combat and attempts at any distance. The game still enforces weapon range, ammunition, facing, line of sight, and other requirements. There is no melee-distance check. It uses the enemy under the pointer, not an unrelated current target. The ranged binding is active only while hovering a living hostile unit, with a secure bag-item binding taking priority over it when processing an item. Ordinary right-click is not rebound.
+The ranged shortcut works during combat and attempts at any distance. The game still enforces weapon range, ammunition, facing, line of sight, and other requirements. There is no melee-distance check. It uses the enemy under the pointer, not an unrelated current target. The ranged binding is active only while hovering a living hostile unit, with the selected secure bag-item binding taking priority when processing an item. Ordinary right-click is not rebound.
 
 Type `/qp ranged` to see the detected attack. Changes to equipment or learned attacks during combat apply after combat ends. Disable the standalone Rightclick Improvement addon if you no longer want its separate Shift + right-click shortcut; QuickProcess supplies the integrated Alt + right-click behavior.
 
 ## Minimap button
 
-The minimap launcher has a turquoise Q and gold P inside a round border. Click it for usage instructions and commands; drag it around the minimap to reposition it. Its position is saved between sessions. Press Escape or click the close button to dismiss the panel.
+The minimap launcher has a turquoise Q and gold P inside a round border. Click it for shortcut settings, usage instructions and commands; drag it around the minimap to reposition it. Its position is saved between sessions. Press Escape or click the close button to dismiss the panel.
 
 ## Item assignments / localized items
 

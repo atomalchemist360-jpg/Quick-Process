@@ -1,7 +1,7 @@
 local addon = CreateFrame("Frame")
 local overlays, elapsed, overlayCount = {}, 0, 0
 local trackedCount, eligibleCount, eqolTrackedCount = 0, 0, 0
-local VERSION = "0.4.4-beta"
+local VERSION = "0.5.0-beta"
 local COMPREHEND_SCROLL = 1296017
 -- Exact item IDs from Wowhead Forever Comprehension (skill 3012).
 -- https://www.wowhead.com/forever/skill=3012/comprehension
@@ -137,7 +137,8 @@ local function updateButton(button)
             "SecureActionButtonTemplate,SecureHandlerEnterLeaveTemplate,SecureHandlerShowHideTemplate")
         -- A bag action wins over any enemy-hover binding until the pointer leaves.
         overlay:SetAttribute("_onenter", [[
-            self:SetBindingClick(true, "ALT-BUTTON2", self:GetName(), "RightButton")
+            local key = self:GetAttribute("bag-binding")
+            if key then self:SetBindingClick(true, key, self:GetName(), "RightButton") end
         ]])
         overlay:SetAttribute("_onleave", [[ self:ClearBindings() ]])
         overlay:SetAttribute("_onhide", [[ self:ClearBindings() ]])
@@ -154,7 +155,7 @@ local function updateButton(button)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             local b, s = location(button)
             GameTooltip:SetBagItem(b, s)
-            GameTooltip:AddLine("Alt + right-click: " .. (self.processSpell or ""), 0.4, 0.8, 1)
+            GameTooltip:AddLine(QuickProcessSettings.BagLabel() .. ": " .. (self.processSpell or ""), 0.4, 0.8, 1)
             GameTooltip:Show()
         end)
         overlay:HookScript("OnLeave", function() GameTooltip:Hide() end)
@@ -162,19 +163,20 @@ local function updateButton(button)
         overlay:Hide()
     end
     -- All protected attributes are prepared outside combat, before the click.
-    local action = tostring(spellID or spell) .. "\n" .. bag .. " " .. slot
-    if overlay.action == action and overlay:IsShown() == IsAltKeyDown() then return end
+    local action = QuickProcessSettings.BagBinding() .. " " .. tostring(spellID or spell) .. "\n" .. bag .. " " .. slot
+    if overlay.action == action and overlay:IsShown() == QuickProcessSettings.BagModifierDown() then return end
     overlay.action = action
     overlay.processSpell = spell
+    overlay:SetAttribute("bag-binding", QuickProcessSettings.BagBinding())
     -- A button-specific attribute without a modifier prefix (type2/spell2) only
-    -- matches unmodified clicks. Wildcards retain the action while Alt is held.
-    -- Visibility still restricts this overlay to Alt, outside combat.
+    -- matches unmodified clicks. Wildcards retain the action while the chosen modifiers are held.
+    -- Visibility restricts the overlay to the exact chosen shortcut, outside combat.
     -- Forever's SecureTemplates.lua targets this bag slot immediately after casting.
     overlay:SetAttribute("*type2", "spell")
     overlay:SetAttribute("*spell2", spellID or spell)
     overlay:SetAttribute("*target-bag2", bag)
     overlay:SetAttribute("*target-slot2", slot)
-    RegisterStateDriver(overlay, "visibility", "[combat] hide; [mod:alt] show; hide")
+    RegisterStateDriver(overlay, "visibility", QuickProcessSettings.BagVisibility())
 end
 local function refresh()
     if InCombatLockdown() or not QuickProcessDB then return end
@@ -223,6 +225,16 @@ local function refresh()
         for slot = 1, 40 do visit(_G["ContainerFrame" .. index .. "Item" .. slot]) end
     end
 end
+QuickProcessSettings.RegisterCallback(function()
+    -- Clear old overrides even for closed bags; reopening installs the new key.
+    for _, overlay in pairs(overlays) do
+        UnregisterStateDriver(overlay, "visibility")
+        ClearOverrideBindings(overlay)
+        overlay:Hide()
+        overlay.action = nil
+    end
+    refresh()
+end)
 local function status()
     say("Version " .. VERSION)
     if not InCombatLockdown() then refresh() end
@@ -230,7 +242,7 @@ local function status()
     say("Comprehend Scroll: " .. (spell and (spell .. " (" .. id .. ") learned") or "not learned/detected"))
     say("Visible bag buttons: " .. trackedCount .. "; eligible processing items: " .. eligibleCount .. ".")
     if _G.EnhanceQoL then say("Enhance QoL bag buttons detected: " .. eqolTrackedCount .. ".") end
-    say("Use Alt + right-click outside combat. Ordinary right-click does not comprehend scrolls.")
+    say("Use " .. QuickProcessSettings.BagLabel() .. " outside combat. Ordinary right-click does not comprehend scrolls.")
 end
 local function scanBags()
     if not C_Container or not C_Container.GetContainerNumSlots then return end
@@ -255,7 +267,8 @@ addon:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         QuickProcessDB = QuickProcessDB or {}
         QuickProcessDB.items = QuickProcessDB.items or {}
-        say("Loaded v" .. VERSION .. ". Alt + right-click an eligible bag item. /qp for help.")
+        QuickProcessSettings.Initialize()
+        say("Loaded v" .. VERSION .. ". " .. QuickProcessSettings.BagLabel() .. " an eligible bag item. /qp for help.")
     end
     refresh()
 end)
@@ -265,6 +278,9 @@ addon:SetScript("OnUpdate", function(_, delta)
 end)
 SLASH_QUICKPROCESS1 = "/qp"
 SlashCmdList.QUICKPROCESS = function(message)
+    if message == "" or message == "settings" then
+        if QuickProcessSettings.Open then QuickProcessSettings.Open(); return end
+    end
     if message == "status" then status(); return end
     if message == "scan" then scanBags(); return end
     if message == "ranged" and QuickProcessRangedWeapon and QuickProcessRangedWeapon.Status then
@@ -291,7 +307,7 @@ SlashCmdList.QUICKPROCESS = function(message)
     end
     id = message:match("^unbind%s+(%d+)$")
     if id then QuickProcessDB.items[tonumber(id)] = nil; refresh(); say("Assignment removed."); return end
-    say("Alt + right-click: Pick Lock, Comprehend Scroll or Disenchant when eligible and learned.")
+    say(QuickProcessSettings.BagLabel() .. ": Pick Lock, Comprehend Scroll or Disenchant when eligible and learned.")
     say("/qp status — show Comprehend Scroll and visible-bag detection. /qp scan — list bag-item decisions.")
     say("/qp ranged — show the detected ranged attack and pending equipment changes.")
     say("/qp bind ITEM_ID SPELL_NAME_OR_ID — assign Pick Lock, Comprehend Scroll or Disenchant.")

@@ -6,6 +6,7 @@ local kind, itemName, tip = 2, 'Sword', ''
 local function frame()
  local f = {shown=true, attributes={},name='TestBagAction'}
  function f:GetName() return self.name end
+ function f:GetAttribute(key) return self.attributes[key] end
  function f:SetBindingClick(priority,key,name,button) self.binding={priority,key,name,button} end
  function f:ClearBindings() self.binding=nil end
  function f:SetScript(k,v) self[k]=v end
@@ -32,6 +33,7 @@ function InCombatLockdown() return combat end
 function IsAltKeyDown() return alt end
 function RegisterStateDriver(f,_,condition) assert(not combat); f.condition=condition; if alt then f:Show() else f:Hide() end end
 function UnregisterStateDriver() assert(not combat) end
+function ClearOverrideBindings(frame) assert(not combat); frame:ClearBindings() end
 function IsPlayerSpell() return known end
 C_Spell={GetSpellInfo=function(id) return {name=({[1296017]='Comprehend Scroll',[1804]='Pick Lock',[13262]='Disenchant',[31252]='Prospecting',[51005]='Milling'})[id] or id,spellID=type(id)=='number' and id or 999} end}
 C_Container={GetContainerItemInfo=function() return item end}
@@ -45,6 +47,7 @@ function ContainerFrameCombinedBags:EnumerateItems() return ipairs(self.Items) e
 function ContainerFrameUtil_EnumerateContainerFrames()
  return ipairs({ContainerFrame1,ContainerFrameCombinedBags})
 end
+dofile('QuickProcess/Settings.lua')
 dofile('QuickProcess/QuickProcess.lua')
 local addon=frames[1]
 addon.OnEvent(addon,'PLAYER_LOGIN')
@@ -69,7 +72,7 @@ assert(initialSpell==13262 and initialBag==0 and initialSlot==1)
 assert(overlay.attributes.useOnKeyDown==false)
 assert(overlay.attributes['*type2']=='spell' and overlay.attributes['*spell2']==13262)
 assert(overlay.attributes['*target-bag2']==0 and overlay.attributes['*target-slot2']==1)
-assert(overlay.condition=='[combat] hide; [mod:alt] show; hide')
+assert(overlay.condition=='[combat] hide; [mod:alt,nomod:ctrl,nomod:shift] show; hide')
 assert(load('local self=...; '..overlay.attributes._onenter))(overlay)
 assert(overlay.binding[2]=='ALT-BUTTON2' and overlay.binding[4]=='RightButton')
 assert(load('local self=...; '..overlay.attributes._onleave))(overlay); assert(not overlay.binding)
