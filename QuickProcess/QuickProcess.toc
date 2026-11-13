@@ -3,6 +3,7 @@
 ## Notes: Configurable bag-item shortcuts and Alt-right-click ranged attacks.
 ## Author: QuickProcess contributors
 ## Version: 0.5.1-beta
+## X-License: All Rights Reserved
 ## SavedVariables: QuickProcessDB
 Settings.lua
 QuickProcess.lua

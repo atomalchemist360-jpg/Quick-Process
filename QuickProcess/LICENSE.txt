@@ -1,0 +1,16 @@
+Copyright (c) 2026 atomalchemist360-jpg. All rights reserved.
+
+Permission is granted to download, install, and use QuickProcess for personal
+use within World of Warcraft.
+
+Except for this permission, rights required by applicable law, or separate
+written permission from the copyright holder, no permission is granted to
+redistribute, sublicense, sell, modify, or create derivative works from
+QuickProcess or its original code, documentation, and artwork.
+
+Third-party names, trademarks, and game assets referenced by the addon remain
+the property of their respective owners.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT
+HOLDER SHALL NOT BE LIABLE FOR CLAIMS OR DAMAGES ARISING FROM ITS USE.

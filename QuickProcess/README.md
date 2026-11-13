@@ -71,3 +71,14 @@ Mocked API checks passed for disenchant selection, comprehension selection, pick
 Ranged-attack mock checks also passed for weapon selection, Hunter Auto Shot preference, custom attack discovery, enemy-hover binding, mouseover target/cast guards, auto-fire macro syntax, combat-safe routing, queued equipment updates, unequipping, and bag-binding cleanup. Alt-modifier resolution regressions also passed: the prior build has no matching secure action under Alt, while the fixed build resolves Comprehend Scroll and the intended bag slot for all 17 verified IDs. Enhance QoL layout regressions also passed for custom-button discovery, late module loading, deduplication, stable-slot table fallback, bank exclusion, and deferred overlay creation during combat. These mocks do not reproduce the game engine or validate both addons running together in the Forever client.
 
 The addon has not been run inside WoW Forever. Secure-action behavior, spell-name lookup, tooltip detection, and bag button integration require in-game verification on build 70888. Start with an expendable item. Enable errors with /console scriptErrors 1 and report any error text, the item link, and which bag interface you use. Unlisted scroll IDs are not comprehended, even if their name or tooltip matches. Update the verified list if the Forever database adds more eligible scrolls. The repository documents each ID and source in docs/forever-scrolls.md.
+
+## License
+
+All Rights Reserved. Copyright (c) 2026 atomalchemist360-jpg. See the included license for permitted personal use.
+
+## Support development
+
+If you would like to support QuickProcess development, donations are appreciated and optional. All addon features are available without donating.
+
+- [Venmo: @atom-Alchemist-55198](https://venmo.com/u/atom-Alchemist-55198)
+- [Cash App: $AtomAlchemist](https://cash.app/$AtomAlchemist)
