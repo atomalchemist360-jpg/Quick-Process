@@ -6,6 +6,14 @@ Interface 16001; intended for build 70888.
 
 Exit WoW, extract the archive, and copy the QuickProcess folder into the game client's Interface/AddOns folder. The layout must be Interface/AddOns/QuickProcess/QuickProcess.toc. Restart the client and enable QuickProcess in the character-selection AddOns list.
 
+## Performance update (0.5.1)
+
+Bag processing now refreshes from inventory/spell changes and bag-open/layout hooks, rather than scanning five times per second. Event bursts are coalesced into one short deferred refresh. Enhance QoL bag modules loaded later are hooked when their addon loads. Unchanged secure actions retain their visibility driver; the game handles modifier changes without rescanning bags.
+
+Hidden tooltip construction is used only when Pick Lock is learned and lock detection is needed. Spell lookups are shared within each refresh. Unrelated item-data loads no longer refresh bag processing or recheck a missing ranged weapon.
+
+A mocked 100-slot, 10-second idle scenario changed from 4,600 item reads and 4,554 hidden tooltip builds to zero idle reads/builds. These are API work counts, not a measured in-game CPU percentage. Restart the client after installing before comparing addon CPU usage.
+
 ## Settings and addon conflicts
 
 Click the QP minimap button or type `/qp settings` (or `/qp`) to open the settings menu. Choose Alt, Ctrl, Shift, or a combination with right-click for all bag processing. The choice saves automatically across sessions and takes effect immediately outside combat. Additional modifiers must match exactly.

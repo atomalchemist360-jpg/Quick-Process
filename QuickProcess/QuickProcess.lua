@@ -1,7 +1,11 @@
 local addon = CreateFrame("Frame")
-local overlays, elapsed, overlayCount = {}, 0, 0
+local overlays, overlayCount = {}, 0
+local queueRefresh, installHooks
+local activeSpellCache
+local waitingItems = {}
+local hookedFrames, hookedFunctions = {}, {}
 local trackedCount, eligibleCount, eqolTrackedCount = 0, 0, 0
-local VERSION = "0.5.0-beta"
+local VERSION = "0.5.1-beta"
 local COMPREHEND_SCROLL = 1296017
 -- Exact item IDs from Wowhead Forever Comprehension (skill 3012).
 -- https://www.wowhead.com/forever/skill=3012/comprehension
@@ -35,7 +39,7 @@ local function spellInfo(id)
         return name, type(id) == "number" and id or nil
     end
 end
-local function learned(id)
+local function findLearned(id)
     if id == "Comprehend Scroll" then id = COMPREHEND_SCROLL end
     local name, resolved = spellInfo(id)
     resolved = resolved or (type(id) == "number" and id)
@@ -45,6 +49,13 @@ local function learned(id)
         or (C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(resolved, bank)) then
         return name, resolved
     end
+end
+local function learned(id)
+    local cached = activeSpellCache and activeSpellCache[id]
+    if cached then return cached[1], cached[2] end
+    local name, resolved = findLearned(id)
+    if activeSpellCache then activeSpellCache[id] = {name, resolved} end
+    return name, resolved
 end
 local function supportedSpell(value)
     local name, resolved = learned(value)
@@ -94,14 +105,16 @@ local function choose(bag, slot)
         end
     end
     if scrollIDs[id] then return learned(COMPREHEND_SCROLL) end
+    local lockName, lockID = learned(1804)
+    local enchantName, enchantID = learned(13262)
+    if not lockName and not enchantName then return end
     local getInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
     if not getInfo then return end
     local name, _, quality, _, _, _, _, _, _, _, _, classID = getInfo(info.hyperlink)
-    if not name then return end -- Wait for uncached item data.
-    local text = tooltipText(bag, slot)
-    if pickable(text) then return learned(1804) end
-    if quality and quality >= 2 and quality <= 4 and (classID == 2 or classID == 4) then
-        return learned(13262)
+    if not name then waitingItems[id] = true; return end
+    if lockName and pickable(tooltipText(bag, slot)) then return lockName, lockID end
+    if enchantName and quality and quality >= 2 and quality <= 4 and (classID == 2 or classID == 4) then
+        return enchantName, enchantID
     end
 end
 local function location(button)
@@ -120,7 +133,7 @@ local function updateButton(button)
     if spell then eligibleCount = eligibleCount + 1 end
     local overlay = overlays[button]
     if not spell then
-        if overlay then
+        if overlay and overlay.action then
             UnregisterStateDriver(overlay, "visibility")
             overlay:Hide()
             overlay:SetAttribute("*type2", nil)
@@ -164,7 +177,7 @@ local function updateButton(button)
     end
     -- All protected attributes are prepared outside combat, before the click.
     local action = QuickProcessSettings.BagBinding() .. " " .. tostring(spellID or spell) .. "\n" .. bag .. " " .. slot
-    if overlay.action == action and overlay:IsShown() == QuickProcessSettings.BagModifierDown() then return end
+    if overlay.action == action then return end
     overlay.action = action
     overlay.processSpell = spell
     overlay:SetAttribute("bag-binding", QuickProcessSettings.BagBinding())
@@ -180,6 +193,7 @@ local function updateButton(button)
 end
 local function refresh()
     if InCombatLockdown() or not QuickProcessDB then return end
+    activeSpellCache = {}
     trackedCount, eligibleCount, eqolTrackedCount = 0, 0, 0
     local seen, seenFrames = {}, {}
     local function visit(button, source)
@@ -194,6 +208,10 @@ local function refresh()
     local function container(frame)
         if not frame or seenFrames[frame] then return end
         seenFrames[frame] = true
+        if frame.HookScript and not hookedFrames[frame] then
+            frame:HookScript("OnShow", function() queueRefresh() end)
+            hookedFrames[frame] = true
+        end
         if frame.EnumerateItems then
             -- Forever returns ipairs(self.Items): the first value is an index.
             for first, second in frame:EnumerateItems() do visit(second or first) end
@@ -222,7 +240,39 @@ local function refresh()
     for index = 1, (NUM_CONTAINER_FRAMES or 13) do
         container(_G["ContainerFrame" .. index])
         -- Older layouts expose named slots instead of a pool.
-        for slot = 1, 40 do visit(_G["ContainerFrame" .. index .. "Item" .. slot]) end
+        if _G["ContainerFrame" .. index .. "Item1"] then
+            for slot = 1, 40 do visit(_G["ContainerFrame" .. index .. "Item" .. slot]) end
+        end
+    end
+    activeSpellCache = nil
+end
+local queued = false
+queueRefresh = function()
+    if queued or InCombatLockdown() then return end
+    if not C_Timer or not C_Timer.After then refresh(); return end
+    queued = true
+    C_Timer.After(0.05, function()
+        queued = false
+        refresh()
+    end)
+end
+installHooks = function()
+    if not hooksecurefunc then return end
+    local function hook(owner, key)
+        if not owner or type(owner[key]) ~= "function" then return end
+        local names = hookedFunctions[owner]
+        if not names then names = {}; hookedFunctions[owner] = names end
+        if names[key] then return end
+        names[key] = true
+        hooksecurefunc(owner, key, function() queueRefresh() end)
+    end
+    for _, name in ipairs({"OpenAllBags", "ToggleAllBags", "ToggleBackpack", "OpenBackpack", "OpenBag", "ToggleBag"}) do hook(_G, name) end
+    local eqol = _G.EnhanceQoL
+    local bags = eqol and eqol.Bags
+    if bags then
+        hook(bags.functions, "ShowFrame")
+        hook(bags.functions, "RequestLayoutUpdate")
+        hook(bags.Core, "AssignStableButtonsToLayout")
     end
 end
 QuickProcessSettings.RegisterCallback(function()
@@ -259,22 +309,23 @@ local function scanBags()
         end
     end
 end
-addon:RegisterEvent("PLAYER_LOGIN")
-addon:RegisterEvent("PLAYER_REGEN_ENABLED")
-addon:RegisterEvent("BAG_UPDATE_DELAYED")
-addon:RegisterEvent("SPELLS_CHANGED")
-addon:SetScript("OnEvent", function(_, event)
+for _, event in ipairs({"PLAYER_LOGIN", "PLAYER_REGEN_ENABLED", "BAG_UPDATE_DELAYED",
+    "SPELLS_CHANGED", "ADDON_LOADED", "ITEM_LOCK_CHANGED", "GET_ITEM_INFO_RECEIVED"}) do
+    addon:RegisterEvent(event)
+end
+addon:SetScript("OnEvent", function(_, event, itemID)
+    if event == "GET_ITEM_INFO_RECEIVED" then
+        if not waitingItems[itemID] then return end
+        waitingItems[itemID] = nil
+    end
     if event == "PLAYER_LOGIN" then
         QuickProcessDB = QuickProcessDB or {}
         QuickProcessDB.items = QuickProcessDB.items or {}
         QuickProcessSettings.Initialize()
         say("Loaded v" .. VERSION .. ". " .. QuickProcessSettings.BagLabel() .. " an eligible bag item. /qp for help.")
     end
-    refresh()
-end)
-addon:SetScript("OnUpdate", function(_, delta)
-    elapsed = elapsed + delta
-    if elapsed >= 0.2 then elapsed = 0; refresh() end
+    if event == "PLAYER_LOGIN" or event == "ADDON_LOADED" then installHooks() end
+    queueRefresh()
 end)
 SLASH_QUICKPROCESS1 = "/qp"
 SlashCmdList.QUICKPROCESS = function(message)

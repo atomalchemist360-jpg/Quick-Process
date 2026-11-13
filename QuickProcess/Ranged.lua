@@ -47,6 +47,8 @@ end
 owner:SetScript("OnEvent", function(_, event, slotOrID)
     if event == "PLAYER_EQUIPMENT_CHANGED" and slotOrID ~= 18 then return end
     if event == "PLAYER_REGEN_ENABLED" and not pending then return end
-    if event == "GET_ITEM_INFO_RECEIVED" and selectedSpell then return end
+    if event == "GET_ITEM_INFO_RECEIVED" then
+        if selectedSpell or slotOrID ~= GetInventoryItemID("player", 18) then return end
+    end
     refresh()
 end)

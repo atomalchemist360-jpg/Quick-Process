@@ -48,12 +48,12 @@ local addon=frames[1]
 addon.OnEvent(addon,'PLAYER_LOGIN')
 assert(#attrs==0) -- The load-on-demand EQoL module has not created its state yet.
 EnhanceQoL={Bags={variables={state=eqolState}}}
-addon.OnUpdate(addon,0.21)
+addon.OnEvent(addon,'ADDON_LOADED')
 local overlay=attrs[1]
 assert(overlay) -- Polling discovers the late-loaded module, no global bag hooks.
 local bankButton=frame(); bankButton.GetBagID=function() return -1 end
 eqolState.itemButtonsByBag[-1]={[1]=bankButton}
-addon.OnUpdate(addon,0.21); assert(#attrs==1) -- No bank overlay.
+addon.OnEvent(addon,'ADDON_LOADED'); assert(#attrs==1) -- No bank overlay.
 
 local function modified(frame,name,button,prefix)
  -- WoW Frame:GetAttribute(prefix,name,suffix) accepts exact modifier/button,
@@ -123,8 +123,8 @@ known=true; tip=''; SlashCmdList.QUICKPROCESS('bind 123 1804'); assert(overlay.a
 assert(overlay.attributes['*target-bag2']==0 and overlay.attributes['*target-slot2']==1)
 item.isLocked=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes['*type2']==nil)
 item.isLocked=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-alt=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
-alt=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
+alt=false; overlay:Hide(); addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
+alt=true; overlay:Show(); addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
 combat=false
 QuickProcessDB.items={}
 item.hyperlink='item:211780'; itemName='Localized untranslated scroll'; tip=''
@@ -138,7 +138,7 @@ addon.OnEvent(addon,'SPELLS_CHANGED'); assert(overlay.attributes['*spell2']==129
 SlashCmdList.QUICKPROCESS('status')
 assert(#attrs==1) -- EQoL buttons and itemButtonsByBag entries are deduplicated.
 eqolState.buttons={} -- Stable-slot table also works without the visible-order array.
-addon.OnUpdate(addon,0.21); assert(overlay.attributes['*spell2']==1296017)
+addon.OnEvent(addon,'ADDON_LOADED'); assert(overlay.attributes['*spell2']==1296017)
 -- A recycled button must target its new bag slot.
 bagButton.GetBagID=function() return 2 end
 bagButton.GetID=function() return 8 end
@@ -151,7 +151,7 @@ combat=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
 -- Loading an EQoL bag button in combat does not create a protected overlay.
 local nextButton=frame(); nextButton.GetID=function() return 9 end
 eqolState.buttons={bagButton,nextButton}
-addon.OnUpdate(addon,0.21); assert(#attrs==1)
+addon.OnEvent(addon,'ADDON_LOADED'); assert(#attrs==1)
 combat=false; addon.OnEvent(addon,'PLAYER_REGEN_ENABLED'); assert(#attrs==2)
 
 print('PASS: EQoL-only bags, load-on-demand, stable-slot table, bank exclusion, deferred combat creation, actual Alt-right-click attribute resolution, left-click exclusion, higher bag overlay strata, verified 17 Forever IDs, duplicate name/tooltip rejection, unlisted comprehension assignment rejection, pooled/combined bag enumeration, canonical spell ID, localized scroll IDs, explicit spell bank, recycled slot targeting, uncached scrolls, disenchant, comprehension, ordinary scroll exclusion, locked/unlocked boxes, translated Locked label, material exclusion, removed old mappings, restricted assignments, unlearned spells, busy items, Alt visibility, combat guard')

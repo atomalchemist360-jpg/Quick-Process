@@ -120,8 +120,8 @@ known=true; tip=''; SlashCmdList.QUICKPROCESS('bind 123 1804'); assert(overlay.a
 assert(overlay.attributes['*target-bag2']==0 and overlay.attributes['*target-slot2']==1)
 item.isLocked=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay.attributes['*type2']==nil)
 item.isLocked=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED')
-alt=false; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
-alt=true; addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
+alt=false; overlay:Hide(); addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(not overlay:IsShown())
+alt=true; overlay:Show(); addon.OnEvent(addon,'BAG_UPDATE_DELAYED'); assert(overlay:IsShown())
 combat=false
 QuickProcessDB.items={}
 item.hyperlink='item:211780'; itemName='Localized untranslated scroll'; tip=''
